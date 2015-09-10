@@ -1,0 +1,151 @@
+describe('webStorage', function() {
+
+  // used to generate random keys
+  function uuid() {
+    function s4() {
+      return Math.floor((1 + Math.random()) * 0x10000)
+                 .toString(16)
+                 .substring(1);
+    }
+
+    return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+           s4() + '-' + s4() + s4() + s4();
+  }
+
+  it('should be defined', function() {
+    expect(webStorage).not.to.be(undefined);
+  });
+
+  describe('interface', function() {
+    it('should have a "get" function defined', function() {
+      expect(webStorage.get).not.to.be(undefined);
+      expect(typeof(webStorage.get)).to.eql('function');
+    });
+
+    it('should have a "set" function defined', function() {
+      expect(webStorage.set).not.to.be(undefined);
+      expect(typeof(webStorage.set)).to.eql('function');
+    });
+
+    it('should have a "remove" function defined', function() {
+      expect(webStorage.remove).not.to.be(undefined);
+      expect(typeof(webStorage.remove)).to.eql('function');
+    });
+
+    it('should have a "clear" function defined', function() {
+      expect(webStorage.clear).not.to.be(undefined);
+      expect(typeof(webStorage.clear)).to.eql('function');
+    });
+  });
+
+  describe('implementation', function() {
+    it('isValid should be true', function() {
+      expect(webStorage.isValid).to.eql(true);
+    });
+
+    it('set(key, value, callback)', function(done) {
+      webStorage.set(uuid(), 'foo', function(e, r) {
+        expect(e).to.be(null);
+        done();
+      });
+    });
+
+    it('get(key, callback)', function(done) {
+      webStorage.get(uuid(), function(e, r) {
+        expect(e).to.be(null);
+        done();
+      });
+    });
+
+    it('clear(callback)', function(done) {
+      webStorage.clear(function(e, r) {
+        expect(e).to.be(null);
+        done();
+      });
+    });
+
+    it('remove(key, callback)', function(done) {
+      webStorage.remove(uuid(), function(e, r) {
+        expect(e).to.be(null);
+        done();
+      });
+    });
+  });
+
+  describe('integration', function() {
+    it('set and get a key/value pair', function(done) {
+      key = uuid();
+      value = 'foo';
+
+      webStorage.set(key, value, function(e, r) {
+        webStorage.get(key, function(e, r) {
+          expect(r).not.to.be(undefined);
+          expect(r).to.eql(value);
+          done();
+        });
+      });
+    });
+
+    it('update an existing key/value pair', function(done) {
+      key = uuid();
+      value = 'foo';
+
+      webStorage.set(key, value, function(e, r) {
+        webStorage.get(key, function(e, r) {
+          expect(r).not.to.be(undefined);
+          expect(r).to.eql(value);
+
+          webStorage.set(key, 'bar', function(e, r) {
+            expect(e).to.be(null);
+
+            webStorage.get(key, function(e, r) {
+              expect(r).to.eql('bar');
+              done();
+            });
+          });
+        });
+      });
+    });
+
+    it('remove a key/value pair', function(done) {
+      key = uuid();
+      value = 'foo';
+
+      webStorage.set(key, value, function(e, r) {
+        webStorage.remove(key, function(e, r) {
+          expect(e).to.be(null);
+
+          // verify the pair is gone
+          webStorage.get(key, function(e, r) {
+            expect(r).to.be(undefined);
+            done();
+          });
+        });
+      });
+    });
+
+    it('clear the entire store', function(done) {
+      key1 = uuid();
+      key2 = uuid();
+      value = 'foo';
+
+      webStorage.set(key1, value, function(e, r) {
+        webStorage.set(key2, value, function(e, r) {
+          webStorage.clear(function(e, r) {
+            expect(e).to.be(null);
+
+            // verify that the pairs are gone
+            webStorage.get(key1, function(e, r) {
+              expect(r).to.be(undefined);
+
+              webStorage.get(key2, function(e, r) {
+                expect(r).to.be(undefined);
+                done();
+              });
+            });
+          });
+        });
+      });
+    });
+  });
+});

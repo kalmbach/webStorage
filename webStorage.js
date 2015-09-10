@@ -81,7 +81,7 @@ var webStorage = (function() {
     if (this.isValid) {
       this.db.transaction(
         function(t) {
-          var query = "DELETE FROM " + self.tableName + " WHERE id=?;";
+          var query = "DELETE FROM " + self.tableName + " WHERE key=?;";
           t.executeSql(query, [key], self.okHandler(callback));
         },
         this.errorHandler(callback)
