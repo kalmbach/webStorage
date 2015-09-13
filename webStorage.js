@@ -21,7 +21,7 @@ var webStorage = (function() {
 
       if (typeof(callback) === "function") {
         if (results.rows.length > 0) {
-          data = JSON.parse(results.rows[0].value);
+          data = JSON.parse(results.rows.item(0).value);
         }
 
         callback(null, data);
@@ -67,8 +67,9 @@ var webStorage = (function() {
           var insert_query = "INSERT INTO " + self.tableName + "(key,value) VALUES(?,?);";
           var data = JSON.stringify(value);
 
-          t.executeSql(delete_query, [key]);
-          t.executeSql(insert_query, [key, data], self.okHandler(callback));
+          t.executeSql(delete_query, [key], function(e, r) {
+            t.executeSql(insert_query, [key, data], self.okHandler(callback));
+          });
         },
         this.errorHandler(callback)
       );
