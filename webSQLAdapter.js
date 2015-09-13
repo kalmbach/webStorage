@@ -1,6 +1,6 @@
 "use strict";
 
-var webStorage = (function() {
+var webSQLAdapter = (function() {
   var publicAPI = {};
 
   publicAPI.db = undefined;
