@@ -1,6 +1,6 @@
 "use strict";
 
-var webSQLAdapter = (function() {
+var indexedDBAdapter = (function() {
   var publicAPI = {};
 
   publicAPI.db = undefined;
@@ -92,21 +92,14 @@ var webSQLAdapter = (function() {
 
   function init() {
     var self = this;
-    this.db = undefined;
 
-    if ('openDatabase' in window && window.openDatabase !== undefined) {
-      this.db = openDatabase('_webStorage', '1.0', 'Web Storage', 2 * 1024 * 1024);
-      this.db.transaction(
-        function(t) {
-          t.executeSql("CREATE TABLE IF NOT EXISTS store(key STRING, value TEXT)");
-        },
-        function(e) {
-          self.isValid = false;
-        },
-        function() {
-          self.isValid = true;
-        }
-      );
+    if ('indexedDB' in window && window.indexedDB !== undefined) {
+      var request = indexedDB.open('_webStorage', 1);
+      request.onerror = function(event) { self.isValid = false; }
+      request.onsuccess = function(event) {
+        self.db = event.target.result;
+        self.isValid = true;
+      }
     } else {
       this.isValid = false;
     }
