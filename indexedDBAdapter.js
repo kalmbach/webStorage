@@ -5,41 +5,27 @@ var indexedDBAdapter = (function() {
 
   publicAPI.db = undefined;
   publicAPI.isValid = false;
-  publicAPI.tableName = "store";
-
-  publicAPI.errorHandler = function(callback) {
-    return function(error) {
-      if (typeof(callback) === "function") {
-        callback(error);
-      }
-    };
-  }
-
-  publicAPI.okHandler = function(callback) {
-    return function(tx, results) {
-      var data;
-
-      if (typeof(callback) === "function") {
-        if (results.rows.length > 0) {
-          data = JSON.parse(results.rows.item(0).value);
-        }
-
-        callback(null, data);
-      }
-    };
-  }
+  publicAPI.storeName = "store";
 
   publicAPI.clear = function(callback) {
     var self = this;
 
     if (this.isValid) {
-      this.db.transaction(
-        function(t) {
-          var query = "DELETE FROM " + self.tableName + ";";
-          t.executeSql(query, [], self.okHandler(callback)); 
-        },
-        this.errorHandler(callback)
-      );
+      var transaction = this.db.transaction([this.storeName], 'readwrite');
+      var objectStore = transaction.objectStore(this.storeName);
+      var request = objectStore.clear();
+
+      request.onsuccess = function(event) {
+        if (typeof(callback) === "function") {
+          callback(null);
+        }
+      };
+
+      request.onerror = function (event) {
+        if (typeof(callback) === "function") {
+          callback(event);
+        }
+      };
     }
   }
 
@@ -47,32 +33,52 @@ var indexedDBAdapter = (function() {
     var self = this;
 
     if (this.isValid) {
-      this.db.readTransaction(
-        function(t) {
-          var query = "SELECT key,value FROM " + self.tableName + " WHERE key=?;";
-          t.executeSql(query, [key], self.okHandler(callback));
-        },
-        this.errorHandler(callback)
-      );
+      var transaction = this.db.transaction([this.storeName], "readonly");
+      var objectStore = transaction.objectStore(this.storeName);
+      var request = objectStore.get(key);
+
+      request.onerror = function(event) {
+        if (typeof(callback) === "function") {
+          callback(event);
+        }
+      };
+
+      request.onsuccess = function(event) {
+        if (typeof(callback) === "function") {
+          var data;
+
+          if (this.result) {
+            data = JSON.parse(this.result.value);
+          }
+
+          callback(null, data);
+        }
+      };
     }
   }
 
   publicAPI.set = function(key, value, callback) {
-    var self = this;
-
+    console.log("Store: " + this.storeName);
     if (this.isValid) {
-      this.db.transaction(
-        function(t) {
-          var delete_query = "DELETE FROM " + self.tableName + " WHERE key=?;";
-          var insert_query = "INSERT INTO " + self.tableName + "(key,value) VALUES(?,?);";
-          var data = JSON.stringify(value);
+      var transaction = this.db.transaction([this.storeName], "readwrite")
+      var objectStore = transaction.objectStore(this.storeName)
+      var deleteRequest = objectStore.delete(key)
 
-          t.executeSql(delete_query, [key], function(e, r) {
-            t.executeSql(insert_query, [key, data], self.okHandler(callback));
-          });
-        },
-        this.errorHandler(callback)
-      );
+      deleteRequest.onsuccess = function(event) {
+        var addRequest = objectStore.add({ key: key, value: JSON.stringify(value) })
+
+        addRequest.onsuccess = function(event) {
+          if (typeof(callback) === "function") {
+            callback(null);
+          }
+        };
+
+        addRequest.onerror = function(event) {
+          if (typeof(callback) === "function") {
+            callback(event);
+          }
+        };
+      }
     }
   }
 
@@ -80,13 +86,21 @@ var indexedDBAdapter = (function() {
     var self = this;
 
     if (this.isValid) {
-      this.db.transaction(
-        function(t) {
-          var query = "DELETE FROM " + self.tableName + " WHERE key=?;";
-          t.executeSql(query, [key], self.okHandler(callback));
-        },
-        this.errorHandler(callback)
-      );
+      var transaction = this.db.transaction([this.storeName], "readwrite")
+      var objectStore = transaction.objectStore(this.storeName)
+      var request = objectStore.delete(key)
+
+      request.onsuccess = function(event) {
+        if (typeof(callback) === "function") {
+          callback(null);
+        }
+      };
+
+      request.onerror = function(event) {
+        if (typeof(callback) === "function") {
+          callback(event);
+        }
+      };
     }
   }
 
@@ -95,9 +109,20 @@ var indexedDBAdapter = (function() {
 
     if ('indexedDB' in window && window.indexedDB !== undefined) {
       var request = indexedDB.open('_webStorage', 1);
-      request.onerror = function(event) { self.isValid = false; }
+
       request.onsuccess = function(event) {
-        self.db = event.target.result;
+        self.db = this.result;
+        self.isValid = true;
+      }
+
+      request.onupgradeneeded = function(event) {
+        var db = this.result;
+
+        var objectStore = db.createObjectStore(self.storeName, { keyPath: "key" });
+        objectStore.createIndex("key", "key", { unique: true });
+      }
+
+      request.onerror = function(event) {
         self.isValid = true;
       }
     } else {
