@@ -3,6 +3,7 @@
 var webSQLAdapter = (function() {
   var publicAPI = {};
 
+  publicAPI.name = "webSQLAdapter";
   publicAPI.db = undefined;
   publicAPI.isValid = false;
   publicAPI.tableName = "store";
@@ -88,6 +89,24 @@ var webSQLAdapter = (function() {
         this.errorHandler(callback)
       );
     }
+  }
+
+  publicAPI.length = function(callback) {
+    var self = this;
+
+    if (this.isValid) {
+      this.db.transaction(
+        function(t) {
+          var query = "SELECT COUNT(*) AS value FROM " + self.tableName + ";";
+          t.executeSql(query, [], self.okHandler(callback));
+        },
+        this.errorHandler(callback)
+      );
+    }
+  }
+
+  publicAPI.key = function(n, callback) {
+
   }
 
   function init() {

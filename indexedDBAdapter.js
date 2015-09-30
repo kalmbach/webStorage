@@ -3,6 +3,7 @@
 var indexedDBAdapter = (function() {
   var publicAPI = {};
 
+  publicAPI.name = "indexedDBAdapter";
   publicAPI.db = undefined;
   publicAPI.isValid = false;
   publicAPI.storeName = "store";
@@ -26,6 +27,8 @@ var indexedDBAdapter = (function() {
           callback(event);
         }
       };
+    } else {
+      callback(event);
     }
   }
 
@@ -58,7 +61,6 @@ var indexedDBAdapter = (function() {
   }
 
   publicAPI.set = function(key, value, callback) {
-    console.log("Store: " + this.storeName);
     if (this.isValid) {
       var transaction = this.db.transaction([this.storeName], "readwrite")
       var objectStore = transaction.objectStore(this.storeName)
@@ -102,6 +104,31 @@ var indexedDBAdapter = (function() {
         }
       };
     }
+  }
+
+  publicAPI.length = function(callback) {
+    var self = this;
+
+    if (this.isValid) {
+      var transaction = this.db.transaction([this.storeName], "readonly");
+      var objectStore = transaction.objectStore(this.storeName);
+      var request = objectStore.count();
+
+      request.onerror = function(event) {
+        if (typeof(callback) === "function") {
+          callback(event);
+        }
+      };
+
+      request.onsuccess = function(event) {
+        if (typeof(callback) === "function") {
+          callback(null, this.result);
+        }
+      };
+    }
+  }
+
+  publicAPI.key = function(n, callback) {
   }
 
   function init() {

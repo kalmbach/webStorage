@@ -3,6 +3,7 @@
 var localStorageAdapter = (function() {
   var publicAPI = {};
 
+  publicAPI.name = "localStorageAdapter";
   publicAPI.isValid = false;
 
   publicAPI.errorHandler = function(error, callback) {
@@ -65,6 +66,20 @@ var localStorageAdapter = (function() {
         this.errorHandler(e, callback);
       }
     }
+  }
+
+  publicAPI.length = function(callback) {
+    if (this.isValid) {
+      try {
+        var length = JSON.stringify(localStorage.length);
+        this.okHandler(length, callback);
+      } catch(e) {
+        this.errorHandler(e, callback);
+      }
+    }
+  }
+
+  publicAPI.key = function(n, callback) {
   }
 
   function init() {
