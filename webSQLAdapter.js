@@ -31,75 +31,65 @@ var webSQLAdapter = (function() {
   }
 
   publicAPI.clear = function(callback) {
-    var self = this;
-
     if (this.isValid) {
       this.db.transaction(
-        function(t) {
-          var query = "DELETE FROM " + self.tableName + ";";
-          t.executeSql(query, [], self.okHandler(callback)); 
-        },
+        (function (t) {
+          var query = "DELETE FROM " + this.tableName + ";";
+          t.executeSql(query, [], this.okHandler(callback));
+        }).bind(this),
         this.errorHandler(callback)
       );
     }
   }
 
   publicAPI.get = function(key, callback) {
-    var self = this;
-
     if (this.isValid) {
       this.db.readTransaction(
-        function(t) {
-          var query = "SELECT key,value FROM " + self.tableName + " WHERE key=?;";
-          t.executeSql(query, [key], self.okHandler(callback));
-        },
+        (function(t) {
+          var query = "SELECT key,value FROM " + this.tableName + " WHERE key=?;";
+          t.executeSql(query, [key], this.okHandler(callback));
+        }).bind(this),
         this.errorHandler(callback)
       );
     }
   }
 
   publicAPI.set = function(key, value, callback) {
-    var self = this;
-
     if (this.isValid) {
       this.db.transaction(
-        function(t) {
-          var delete_query = "DELETE FROM " + self.tableName + " WHERE key=?;";
-          var insert_query = "INSERT INTO " + self.tableName + "(key,value) VALUES(?,?);";
+        (function(t) {
+          var delete_query = "DELETE FROM " + this.tableName + " WHERE key=?;";
+          var insert_query = "INSERT INTO " + this.tableName + "(key,value) VALUES(?,?);";
           var data = JSON.stringify(value);
 
-          t.executeSql(delete_query, [key], function(e, r) {
-            t.executeSql(insert_query, [key, data], self.okHandler(callback));
-          });
-        },
+          t.executeSql(delete_query, [key], (function(e, r) {
+            t.executeSql(insert_query, [key, data], this.okHandler(callback));
+          }).bind(this));
+        }).bind(this),
         this.errorHandler(callback)
       );
     }
   }
 
   publicAPI.remove = function(key, callback) {
-    var self = this;
-
     if (this.isValid) {
       this.db.transaction(
-        function(t) {
-          var query = "DELETE FROM " + self.tableName + " WHERE key=?;";
-          t.executeSql(query, [key], self.okHandler(callback));
-        },
+        (function(t) {
+          var query = "DELETE FROM " + this.tableName + " WHERE key=?;";
+          t.executeSql(query, [key], this.okHandler(callback));
+        }).bind(this),
         this.errorHandler(callback)
       );
     }
   }
 
   publicAPI.length = function(callback) {
-    var self = this;
-
     if (this.isValid) {
       this.db.transaction(
-        function(t) {
-          var query = "SELECT COUNT(*) AS value FROM " + self.tableName + ";";
-          t.executeSql(query, [], self.okHandler(callback));
-        },
+        (function(t) {
+          var query = "SELECT COUNT(*) AS value FROM " + this.tableName + ";";
+          t.executeSql(query, [], this.okHandler(callback));
+        }).bind(this),
         this.errorHandler(callback)
       );
     }
@@ -110,7 +100,6 @@ var webSQLAdapter = (function() {
   }
 
   function init() {
-    var self = this;
     this.db = undefined;
 
     if ('openDatabase' in window && window.openDatabase !== undefined) {
@@ -119,12 +108,8 @@ var webSQLAdapter = (function() {
         function(t) {
           t.executeSql("CREATE TABLE IF NOT EXISTS store(key STRING, value TEXT)");
         },
-        function(e) {
-          self.isValid = false;
-        },
-        function() {
-          self.isValid = true;
-        }
+        (function(e) { this.isValid = false; }).bind(this),
+        (function() { this.isValid = true; }).bind(this)
       );
     } else {
       this.isValid = false;
